@@ -37,37 +37,21 @@ jobs:
           pod install --repo-update
           cd ..
 
-      - name: Build iOS (no-codesign skips IPA)
+      - name: Build iOS
         run: flutter build ipa --release --no-codesign
 
-      - name: Locate xcarchive
+      - name: Package as IPA
         run: |
-          echo "=== build/ios contents ==="
-          find build/ios -maxdepth 3 -type d 2>/dev/null
-          echo "=== xcarchive contents ==="
-          find build/ios/archive -type f 2>/dev/null | head -20
-
-      - name: Package Runner.app from xcarchive
-        run: |
-          # xcarchive 内部结构: Products/Applications/Runner.app
           APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
-          if [ -d "$APP_PATH" ]; then
-            mkdir -p output
-            cp -r "$APP_PATH" output/Runner.app
-            echo "=== Packaged successfully ==="
-            ls -la output/
-          else
-            echo "Runner.app not found at: $APP_PATH"
-            find build/ios -name "*.app" -type d
-            exit 1
-          fi
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r watermark-camera.ipa Payload
+          rm -rf Payload
+          ls -lh watermark-camera.ipa
 
-      - name: Upload artifacts
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: watermark-camera
-          path: |
-            output/Runner.app
-            build/ios/archive/Runner.xcarchive
-          if-no-files-found: warn
+          path: watermark-camera.ipa
           retention-days: 7
