@@ -38,27 +38,26 @@ jobs:
           cd ..
 
       - name: Build iOS
-        run: flutter build ipa --release --no-codesign
+        run: flutter build ios --release --no-codesign
+
+      - name: Clean code signature
+        run: |
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          # 删除旧的签名残留，方便爱思助手重新签名
+          rm -rf "$APP_PATH/_CodeSignature" 2>/dev/null || true
+          rm -f "$APP_PATH/embedded.mobileprovision" 2>/dev/null || true
+          echo "=== App contents ==="
+          ls -la "$APP_PATH"
+          echo "=== Info.plist bundle id ==="
+          /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_PATH/Info.plist"
 
       - name: Package as IPA
         run: |
-          APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
-          echo "APP_PATH: $APP_PATH"
-          echo "=== Runner.app contents ==="
-          ls -la "$APP_PATH"
-          echo "=== Info.plist ==="
-          cat "$APP_PATH/Info.plist" | head -20
-          echo "=== Frameworks ==="
-          ls -la "$APP_PATH/Frameworks/" 2>/dev/null || echo "(no Frameworks dir)"
-          echo "=== Packaging ==="
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
+          cp -R build/ios/iphoneos/Runner.app Payload/
           zip -r -y watermark-camera.ipa Payload
           rm -rf Payload
-          echo "IPA size:"
           ls -lh watermark-camera.ipa
-          echo "=== Verify IPA ==="
-          unzip -l watermark-camera.ipa | head -30
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
