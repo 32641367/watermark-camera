@@ -10,60 +10,40 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 60
 
-    env:
-      FLUTTER_VERSION: '3.24.5'
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.18.0
         with:
-          node-version: '20'
-
-      - name: Setup Flutter (manual)
-        run: |
-          git clone https://github.com/flutter/flutter.git --depth 1 --branch ${FLUTTER_VERSION} $HOME/flutter
-          echo "$HOME/flutter/bin" >> $GITHUB_PATH
-          echo "FLUTTER_ROOT=$HOME/flutter" >> $GITHUB_ENV
-          flutter --version
+          flutter-version: '3.24.5'
+          channel: 'stable'
 
       - name: Install CocoaPods
         run: |
           sudo gem install cocoapods -N
           pod --version
 
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Generate iOS project
-        run: |
-          flutter create --platforms=ios --org com.watermarkcamera --project-name watermark_camera .
+      - name: Create iOS project
+        run: flutter create --platforms=ios --org com.watermarkcamera --project-name watermark_camera .
 
-      - name: Build iOS (no codesign)
+      - name: Install pods
         run: |
           cd ios
           pod install --repo-update
           cd ..
-          flutter build ipa --release --no-codesign
 
-      - name: Upload IPA artifact
+      - name: Build iOS
+        run: flutter build ipa --release --no-codesign
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: watermark-camera-ipa
+          name: app
           path: build/ios/ipa/*.ipa
           if-no-files-found: warn
           retention-days: 7
