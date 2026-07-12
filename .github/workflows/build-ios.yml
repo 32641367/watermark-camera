@@ -37,41 +37,37 @@ jobs:
           pod install --repo-update
           cd ..
 
-      - name: Build iOS (verbose)
-        run: flutter build ipa --release --no-codesign --verbose 2>&1 | tee build.log
+      - name: Build iOS (no-codesign skips IPA)
+        run: flutter build ipa --release --no-codesign
 
-      - name: List all built files
+      - name: Locate xcarchive
         run: |
-          echo "=== build/ contents ==="
-          find build -type f 2>/dev/null
-          echo "=== ios/build/ contents (if exists) ==="
-          find ios/build -type f 2>/dev/null | head -20
-          echo "=== All .app bundles ==="
-          find . -name "*.app" -type d 2>/dev/null
-          echo "=== Build log tail ==="
-          tail -30 build.log 2>/dev/null
+          echo "=== build/ios contents ==="
+          find build/ios -maxdepth 3 -type d 2>/dev/null
+          echo "=== xcarchive contents ==="
+          find build/ios/archive -type f 2>/dev/null | head -20
 
-      - name: Package build directory
+      - name: Package Runner.app from xcarchive
         run: |
-          mkdir -p output
-          # Try to copy anything that looks like an artifact
-          if [ -d "build/ios/ipa" ]; then
-            cp -r build/ios/ipa/* output/ 2>/dev/null || true
+          # xcarchive 内部结构: Products/Applications/Runner.app
+          APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
+          if [ -d "$APP_PATH" ]; then
+            mkdir -p output
+            cp -r "$APP_PATH" output/Runner.app
+            echo "=== Packaged successfully ==="
+            ls -la output/
+          else
+            echo "Runner.app not found at: $APP_PATH"
+            find build/ios -name "*.app" -type d
+            exit 1
           fi
-          # Find any .app bundle
-          APP_DIR=$(find . -name "*.app" -type d 2>/dev/null | head -1)
-          if [ -n "$APP_DIR" ]; then
-            echo "Found .app: $APP_DIR"
-            cp -r "$APP_DIR" output/Runner.app
-          fi
-          # Show what's in output
-          echo "=== output/ contents ==="
-          ls -la output/
 
-      - name: Upload all artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: app
-          path: output/
+          name: watermark-camera
+          path: |
+            output/Runner.app
+            build/ios/archive/Runner.xcarchive
           if-no-files-found: warn
           retention-days: 7
