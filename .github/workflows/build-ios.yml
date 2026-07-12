@@ -43,11 +43,22 @@ jobs:
       - name: Package as IPA
         run: |
           APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
+          echo "APP_PATH: $APP_PATH"
+          echo "=== Runner.app contents ==="
+          ls -la "$APP_PATH"
+          echo "=== Info.plist ==="
+          cat "$APP_PATH/Info.plist" | head -20
+          echo "=== Frameworks ==="
+          ls -la "$APP_PATH/Frameworks/" 2>/dev/null || echo "(no Frameworks dir)"
+          echo "=== Packaging ==="
           mkdir -p Payload
-          cp -r "$APP_PATH" Payload/
-          zip -r watermark-camera.ipa Payload
+          cp -R "$APP_PATH" Payload/
+          zip -r -y watermark-camera.ipa Payload
           rm -rf Payload
+          echo "IPA size:"
           ls -lh watermark-camera.ipa
+          echo "=== Verify IPA ==="
+          unzip -l watermark-camera.ipa | head -30
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
