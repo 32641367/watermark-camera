@@ -40,10 +40,19 @@ jobs:
       - name: Build iOS
         run: flutter build ipa --release --no-codesign
 
+      - name: Show built files
+        run: |
+          echo "=== build directory tree ==="
+          find build -type f 2>/dev/null
+          echo "=== END ==="
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: app
-          path: build/ios/ipa/*.ipa
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/**/*.ipa
+            build/**/*.ipa
           if-no-files-found: warn
           retention-days: 7
