@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/watermark_config.dart';
 import '../services/watermark_renderer.dart';
 import 'preview_page.dart';
+import 'settings_page.dart';
 
 /// 相机拍照页面
 class CameraPage extends StatefulWidget {
