@@ -37,6 +37,19 @@ jobs:
           pod install --repo-update
           cd ..
 
+      - name: Add iOS permissions
+        run: |
+          PLIST="ios/Runner/Info.plist"
+          # 相机权限
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string '需要使用相机来拍摄水印照片'" "$PLIST"
+          # 麦克风权限（录像用）
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string '需要使用麦克风来录制视频'" "$PLIST"
+          # 相册写入权限
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string '需要保存照片到相册'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string '需要访问相册来保存和查看照片'" "$PLIST"
+          echo "=== Permissions added ==="
+          /usr/libexec/PlistBuddy -c "Print" "$PLIST" | grep -E "NSCamera|NSMicrophone|NSPhoto"
+
       - name: Build iOS
         run: flutter build ios --release --no-codesign
 
