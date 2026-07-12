@@ -40,19 +40,32 @@ jobs:
       - name: Build iOS
         run: flutter build ipa --release --no-codesign
 
-      - name: Show built files
+      - name: Show all built files
         run: |
-          echo "=== build directory tree ==="
+          echo "=== ALL FILES IN build/ ==="
           find build -type f 2>/dev/null
+          echo "=== ALL .ipa FILES ==="
+          find . -name "*.ipa" 2>/dev/null
+          echo "=== ALL .app BUNDLES ==="
+          find . -name "*.app" -type d 2>/dev/null
           echo "=== END ==="
+
+      - name: Copy IPA to workspace root
+        run: |
+          IPA_FILE=$(find . -name "*.ipa" 2>/dev/null | head -1)
+          if [ -n "$IPA_FILE" ]; then
+            echo "Found IPA: $IPA_FILE"
+            mkdir -p output
+            cp "$IPA_FILE" output/watermark-camera.ipa
+            ls -la output/
+          else
+            echo "NO IPA FOUND!"
+            exit 1
+          fi
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: app
-          path: |
-            build/ios/ipa/*.ipa
-            build/ios/**/*.ipa
-            build/**/*.ipa
-          if-no-files-found: warn
+          path: output/watermark-camera.ipa
           retention-days: 7
