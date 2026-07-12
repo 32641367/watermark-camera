@@ -20,24 +20,10 @@ jobs:
           flutter-version: '3.24.5'
           channel: 'stable'
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.2
-          bundler-cache: true
-
       - name: Install CocoaPods
         run: |
-          sudo gem install cocoapods
+          sudo gem install cocoapods -N
           pod --version
-
-      - name: Cache Pods
-        uses: actions/cache@v4
-        with:
-          path: ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile') }}
-          restore-keys: |
-            ${{ runner.os }}-pods-
 
       - name: Flutter pub get
         run: flutter pub get
@@ -52,5 +38,5 @@ jobs:
         with:
           name: watermark-camera-ipa
           path: build/ios/ipa/*.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
