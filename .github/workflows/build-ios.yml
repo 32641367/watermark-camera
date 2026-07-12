@@ -40,24 +40,31 @@ jobs:
       - name: Build iOS
         run: flutter build ios --release --no-codesign
 
-      - name: Clean code signature
+      - name: Clean ALL code signatures
         run: |
           APP_PATH="build/ios/iphoneos/Runner.app"
-          # 删除旧的签名残留，方便爱思助手重新签名
-          rm -rf "$APP_PATH/_CodeSignature" 2>/dev/null || true
-          rm -f "$APP_PATH/embedded.mobileprovision" 2>/dev/null || true
-          echo "=== App contents ==="
-          ls -la "$APP_PATH"
+          # 递归删除所有签名残留（包括 Frameworks 内部）
+          find "$APP_PATH" -name "_CodeSignature" -type d -exec rm -rf {} + 2>/dev/null || true
+          find "$APP_PATH" -name "*.mobileprovision" -type f -delete 2>/dev/null || true
+          find "$APP_PATH" -name "PkgInfo" -type f -delete 2>/dev/null || true
+          echo "=== Verify we have Frameworks ==="
+          ls -la "$APP_PATH/Frameworks/" 2>/dev/null || echo "No Frameworks dir"
           echo "=== Info.plist bundle id ==="
           /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_PATH/Info.plist"
 
-      - name: Package as IPA
+      - name: Package as IPA (ditto method)
         run: |
-          mkdir -p Payload
-          cp -R build/ios/iphoneos/Runner.app Payload/
-          zip -r -y watermark-camera.ipa Payload
           rm -rf Payload
+          mkdir -p Payload
+          # ditto 保留所有 symlink、权限和元数据，比 cp -R 更可靠
+          ditto "build/ios/iphoneos/Runner.app" "Payload/Runner.app"
+          # ditto 压缩也能保留 symlink
+          ditto -c -k --keepParent Payload watermark-camera.ipa
+          rm -rf Payload
+          echo "=== IPA size ==="
           ls -lh watermark-camera.ipa
+          echo "=== Verify IPA contents ==="
+          unzip -l watermark-camera.ipa | head -40
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
