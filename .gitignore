@@ -8,10 +8,12 @@
 build/
 fvm/
 
-# iOS
-ios/
+# iOS - 保留原生工程但忽略自动生成的文件
 ios/Flutter/Generated.xcconfig
 ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
 
 # Android
 android/.gradle

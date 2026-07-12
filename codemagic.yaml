@@ -1,5 +1,3 @@
-# Codemagic 云端编译配置
-# iOS 原生工程会在编译时通过 `flutter create` 自动生成
 workflows:
   ios-build:
     name: iOS Build
@@ -9,14 +7,10 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Create iOS platform
-        script: |
-          flutter create --platforms=ios --org com.watermarkcamera --project-name watermark_camera .
-      - name: Set iOS deployment target
-        script: |
-          sed -i '' "s/# platform :ios, '12.0'/platform :ios, '12.0'/g" ios/Podfile || true
       - name: Get Flutter packages
         script: flutter pub get
+      - name: iOS Pod install
+        script: cd ios && pod install && cd ..
       - name: Build iOS
         script: flutter build ipa --release
     artifacts:
