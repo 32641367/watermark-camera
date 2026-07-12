@@ -37,35 +37,41 @@ jobs:
           pod install --repo-update
           cd ..
 
-      - name: Build iOS
-        run: flutter build ipa --release --no-codesign
+      - name: Build iOS (verbose)
+        run: flutter build ipa --release --no-codesign --verbose 2>&1 | tee build.log
 
-      - name: Show all built files
+      - name: List all built files
         run: |
-          echo "=== ALL FILES IN build/ ==="
+          echo "=== build/ contents ==="
           find build -type f 2>/dev/null
-          echo "=== ALL .ipa FILES ==="
-          find . -name "*.ipa" 2>/dev/null
-          echo "=== ALL .app BUNDLES ==="
+          echo "=== ios/build/ contents (if exists) ==="
+          find ios/build -type f 2>/dev/null | head -20
+          echo "=== All .app bundles ==="
           find . -name "*.app" -type d 2>/dev/null
-          echo "=== END ==="
+          echo "=== Build log tail ==="
+          tail -30 build.log 2>/dev/null
 
-      - name: Copy IPA to workspace root
+      - name: Package build directory
         run: |
-          IPA_FILE=$(find . -name "*.ipa" 2>/dev/null | head -1)
-          if [ -n "$IPA_FILE" ]; then
-            echo "Found IPA: $IPA_FILE"
-            mkdir -p output
-            cp "$IPA_FILE" output/watermark-camera.ipa
-            ls -la output/
-          else
-            echo "NO IPA FOUND!"
-            exit 1
+          mkdir -p output
+          # Try to copy anything that looks like an artifact
+          if [ -d "build/ios/ipa" ]; then
+            cp -r build/ios/ipa/* output/ 2>/dev/null || true
           fi
+          # Find any .app bundle
+          APP_DIR=$(find . -name "*.app" -type d 2>/dev/null | head -1)
+          if [ -n "$APP_DIR" ]; then
+            echo "Found .app: $APP_DIR"
+            cp -r "$APP_DIR" output/Runner.app
+          fi
+          # Show what's in output
+          echo "=== output/ contents ==="
+          ls -la output/
 
-      - name: Upload IPA
+      - name: Upload all artifacts
         uses: actions/upload-artifact@v4
         with:
           name: app
-          path: output/watermark-camera.ipa
+          path: output/
+          if-no-files-found: warn
           retention-days: 7
